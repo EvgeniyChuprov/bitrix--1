@@ -1,6 +1,7 @@
 <? if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) {
     die();
 }
+\Bitrix\Main\Loader::includeModule('iblock');
 /** @var array $arParams */
 /** @var array $arResult */
 /** @global CMain $APPLICATION */
@@ -33,9 +34,15 @@
             Город<br>
             <select name="city">
                 <option value="">Выбрать</option>
-                <option value="4">Москва</option>
-                <option value="5">Санкт-Петербург</option>
-                <option value="6">Казань</option>
+                <option value="<? echo \Bitrix\Iblock\PropertyEnumerationTable::getList()->fetchAll()[0]['ID']; ?>">
+                    Москва
+                </option>
+                <option value="<? echo \Bitrix\Iblock\PropertyEnumerationTable::getList()->fetchAll()[1]['ID']; ?>">
+                    Санкт-Петербург
+                </option>
+                <option value="<? echo \Bitrix\Iblock\PropertyEnumerationTable::getList()->fetchAll()[2]['ID']; ?>">
+                    Казань
+                </option>
             </select>
         </label>
     </div>

@@ -1,5 +1,6 @@
 <?php
 
+
 namespace YLab\Validation\Components;
 
 //use Bitrix\Main\UserTable;
@@ -46,8 +47,7 @@ class ValidationTestComponent extends ComponentValidation
                 \Bitrix\Main\Loader::includeModule('iblock');
 
                 $el = new \CIBlockElement;
-                $iblock_id = 2;
-
+                $iIBlockId = \Bitrix\Iblock\IblockTable::getList()->fetch()['ID'];
 
                 //Свойства
                 $PROP = [
@@ -57,10 +57,13 @@ class ValidationTestComponent extends ComponentValidation
                     'phone' => $_POST['phone']
                 ];
 
+                echo '<pre>';
+                print_r($_POST);
+                echo '<pre>';
                 $fields = array(
                     "DATE_CREATE" => date("d.m.Y H:i:s"),
                     "CREATED_BY" => $GLOBALS['USER']->GetID(),
-                    "IBLOCK_ID" => $iblock_id,
+                    "IBLOCK_ID" => $iIBlockId,
                     "PROPERTY_VALUES" => $PROP,
                     "NAME" => strip_tags($_REQUEST['name']),
                     "ACTIVE" => "Y",
@@ -91,12 +94,9 @@ class ValidationTestComponent extends ComponentValidation
          */
         return [
             'name' => 'required',
-            'city' => 'required|numeric|in: 4,5,6',
+            'city' => 'required|numeric',
             'date' => 'required|date_format:d.m.Y',
             'phone' => 'required|regex:/(\+7)[0-9]{10}/'
         ];
     }
 }
-
-
-?>

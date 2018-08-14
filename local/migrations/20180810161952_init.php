@@ -10,134 +10,170 @@ use Phinx\Migration\AbstractMigration;
 class Init extends AbstractMigration
 {
 
-    private static $iBlockData = array(
-        'NAME' => 'test',
-        'CODE' => 'Users',
-        'TYPE' => 'Users'
-    );
-
-
-    public static $listPropertyValues = array(
-        '4' => 'Москва',
-        '5' => 'Санкт-Петербург',
-        '6' => 'Казань',
-    );
-    public static $listPropertyName = 'Город';
-    public static $listPropertyCode = 'city';
-
-    /**
-     * @throws Exception
-     */
     public function up()
     {
-        \Bitrix\Main\Loader::includeModule('iblock');
-        $cIBlock = new CIBlock();
-        $dbIBlock = $cIBlock->GetList(
-            array(),
-            array('CODE' => static::$iBlockData['CODE'])
-        );
-        if ($dbIBlock->Fetch()) {
-            return;
-        }
-        $iBlockId = $cIBlock->Add(array(
-            'NAME' => static::$iBlockData['NAME'],
-            'CODE' => static::$iBlockData['CODE'],
-            'IBLOCK_TYPE_ID' => static::$iBlockData['TYPE'],
-            'VERSION' => 1,
-            'SITE_ID' => array('s1'),
-        ));
-        if (false === $iBlockId) {
-            throw new Exception($cIBlock->LAST_ERROR);
-        }
-
-        CIBlock::SetFields($iBlockId);
+        $sTypeIBlockID = 'TypeUsersIB';
+        $sIBlockID = 'Пользователи';
+        $sNameRu = 'Тип ИБ Пользователи';
+        $sNameEn = 'TypeIBUsers';
+        $sCode = 'Users';
+        $iIBlockId = 0;
+        $aIBlock = [];
+        $aPropIBlock = [];
 
 
-        $ibp = new CIBlockProperty;
-        $ibpEnum = new CIBlockPropertyEnum;
-        $arFields = array(
-            'NAME' => self::$listPropertyName,
-            'ACTIVE' => 'Y',
-            'IS_REQUIRED' => 'Y',
-            'SORT' => '500',
-            'CODE' => self::$listPropertyCode,
-            'PROPERTY_TYPE' => 'L',
-            'FILTRABLE' => 'Y',
-            'IBLOCK_ID' => $iBlockId,
-        );
-        $ibp->Add($arFields);
-        $properties = CIBlockProperty::GetList(
-            array(),
-            array(
-                'IBLOCK_ID' => $iBlockId,
-                'CODE' => self::$listPropertyCode
-            )
-        );
+        if (CModule::IncludeModule("iblock")) {
 
-        if ($propFields = $properties->GetNext()) {
-            foreach (self::$listPropertyValues as $listPropertyId => $listPropertyValue) {
-                $ibpEnum->Add(array(
-                    'PROPERTY_ID' => $propFields['ID'],
-                    'VALUE' => $listPropertyValue,
-                    'XML_ID' => $listPropertyId,
-                ));
-            }
-        }
-
-
-        $ibp = new CIBlockProperty();
-        $ibp->Add(array(
-            'NAME' => 'Дата рождения',
-            'ACTIVE' => 'Y',
-            'IS_REQUIRED' => 'Y',
-            'SORT' => '500',
-            'CODE' => 'data',
-            'PROPERTY_TYPE' => 'S',
-            'FILTRABLE' => 'Y',
-            'IBLOCK_ID' => $iBlockId,
-        ));
-        $ibp->Add(array(
-            'NAME' => 'Номер телефона',
-            'ACTIVE' => 'Y',
-            'IS_REQUIRED' => 'Y',
-            'SORT' => '500',
-            'CODE' => 'phone',
-            'PROPERTY_TYPE' => 'S',
-            'FILTRABLE' => 'Y',
-            'IBLOCK_ID' => $iBlockId,
-        ));
-
-        foreach ($this->textProperties as $propCode => $property) {
-            $arFields = array(
-                'NAME' => $property,
-                'ACTIVE' => 'Y',
-                'SORT' => '100',
-                'CODE' => $propCode,
-                'PROPERTY_TYPE' => 'S',
-                'FILTRABLE' => 'Y',
+            $db_iblock_type = CIBlockType::GetList(
+                array(),
+                array(
+                    "ID" => $sTypeIBlockID
+                )
             );
-            $ibp->Add($arFields);
+
+            if (empty($db_iblock_type->arResult)) {
+                $obIBlockType = new CIBlockType;
+                $arFields = Array(
+                    "ID" => $sTypeIBlockID,
+                    "SECTIONS" => "Y",
+                    'LANG' => Array(
+                        'en' => Array(
+                            'NAME' => $sNameEn
+                        ),
+                        'ru' => Array(
+                            'NAME' => $sNameRu
+                        )
+                    )
+                );
+                $obIBlockType->Add($arFields);
+            }
+
+            $oUsersIBlock = CIBlock::GetList(
+                Array(),
+                Array(
+                    'TYPE' => $sTypeIBlockID,
+                    'ACTIVE' => 'Y',
+                ), true
+            );
+            while ($ar_res = $oUsersIBlock->Fetch()) {
+                $aIBlock = $ar_res;
+            }
+
+            if (empty($aIBlock)) {
+                $oIblock = new CIBlock;
+                $aFields = Array(
+                    "NAME" => $sIBlockID,
+                    "CODE" => $sCode,
+                    "ACTIVE" => "Y",
+                    "IBLOCK_TYPE_ID" => $sTypeIBlockID,
+                    "SITE_ID" => 's1'
+                );
+                $oIblock->Add($aFields);
+            }
+
+            $res = CIBlock::GetList(
+                Array(),
+                Array(
+                    'TYPE' => $sTypeIBlockID,
+                    'SITE_ID' => 's1',
+                    'ACTIVE' => 'Y',
+                    "CNT_ACTIVE" => "Y",
+
+                ), true
+            );
+
+            while ($ar_res = $res->Fetch()) {
+                $iIBlockId = $ar_res['ID'];
+            }
+
+            $oProperties = CIBlockProperty::GetList(
+                Array(),
+                Array(
+                    'IBLOCK_ID' => $iIBlockId,
+                    'ACTIVE' => 'Y',
+                ), true
+            );
+            while ($ar_res = $oProperties->Fetch()) {
+                $aPropIBlock = $ar_res;
+            }
+
+            if (empty($aPropIBlock)) {
+                $aFieldsCity = Array(
+                    "NAME" => "Город",
+                    "ACTIVE" => "Y",
+                    "CODE" => "city",
+                    "IS_REQUIRED" => "Y",
+                    "PROPERTY_TYPE" => "L",
+                    "IBLOCK_ID" => $iIBlockId
+                );
+                $aFieldsCity["VALUES"][0] = Array(
+                    "VALUE" => "Москва",
+                    "DEF" => "N",
+                );
+
+                $aFieldsCity["VALUES"][1] = Array(
+                    "VALUE" => "Санкт-Петербург",
+                    "DEF" => "N",
+                );
+
+                $aFieldsCity["VALUES"][2] = Array(
+                    "VALUE" => "Казань",
+                    "DEF" => "N",
+                );
+
+                $aFieldsDate = Array(
+                    "NAME" => "Дата рождения",
+                    "ACTIVE" => "Y",
+                    "CODE" => "data",
+                    "IS_REQUIRED" => "Y",
+                    "PROPERTY_TYPE" => "S",
+                    "IBLOCK_ID" => $iIBlockId
+                );
+
+                $aFieldsPhone = Array(
+                    "NAME" => "Номер телефона",
+                    "ACTIVE" => "Y",
+                    "CODE" => "phone",
+                    "IS_REQUIRED" => "Y",
+                    "PROPERTY_TYPE" => "S",
+                    "IBLOCK_ID" => $iIBlockId
+                );
+
+                $ibp = new CIBlockProperty;
+                $ibp->Add($aFieldsCity);
+                $ibp->Add($aFieldsDate);
+                $ibp->Add($aFieldsPhone);
+            }
         }
 
     }
 
-    /**
-     * @throws \Bitrix\Main\LoaderException
-     */
 
     public function down()
     {
-        \Bitrix\Main\Loader::includeModule('iblock');
-        $iBlock = CIBlock::GetList(array(), array('ID' => self::$iBlockId))->GetNext();
-        if ($iBlock['ID']) {
-            $properties = CIBlockProperty::GetList(
-                array(),
-                array('IBLOCK_ID' => $iBlock['ID'], 'CODE' => self::$listPropertyCode)
+        $sTypeIBlockID = 'TypeUsersIB';
+        $iIBlockId = 0;
+        if (CModule::IncludeModule("iblock")) {
+            $res = CIBlock::GetList(
+                Array(),
+                Array(
+                    'TYPE' => $sTypeIBlockID,
+                    'SITE_ID' => 's1',
+                    'ACTIVE' => 'Y',
+                    "CNT_ACTIVE" => "Y",
+
+                ), true
             );
-            if ($propFields = $properties->GetNext()) {
-                CIBlockProperty::Delete($propFields['ID']);
+
+            while ($ar_res = $res->Fetch()) {
+                $iIBlockId = $ar_res['ID'];
+                Composer\Exception($iIBlockId);
             }
+            CIBlock::Delete($iIBlockId);
+
+            CIBlockType::Delete($sTypeIBlockID);
         }
+
+
     }
 }
-
